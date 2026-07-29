@@ -1,0 +1,295 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-w: #f5f2ea; --c-w-text: #333;
+  --c-u: #2563eb;
+  --c-g: #16a34a;
+  --c-r: #dc2626;
+  --c-k: #2d2d2d;
+  --c-gold: #eab308;
+  --bg: #1a2634;
+  --panel: #223245;
+  --panel2: #2b3f57;
+  --text: #e8eef5;
+  --accent: #4fc3f7;
+}
+
+body {
+  font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* 터치 기기: 더블탭 확대 방지, 탭 하이라이트 제거 */
+button, .token, .card, .deck, .noble, .mini {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- 홈 / 대기실 ---------- */
+.home-box {
+  max-width: 380px;
+  margin: 10vh auto;
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+}
+.home-box h1 { font-size: 2rem; margin-bottom: 6px; }
+.subtitle { color: #9fb3c8; font-size: .9rem; margin-bottom: 18px; }
+.home-box input {
+  width: 100%; padding: 10px 12px; margin-bottom: 12px;
+  border-radius: 8px; border: 1px solid #3b5068;
+  background: var(--panel2); color: var(--text); font-size: 1rem;
+}
+button {
+  padding: 10px 16px; border: none; border-radius: 8px;
+  background: #3b5068; color: var(--text); font-size: .95rem; cursor: pointer;
+}
+button:hover:not(:disabled) { filter: brightness(1.15); }
+button:disabled { opacity: .4; cursor: default; }
+button.primary { background: #1976d2; width: 100%; }
+button.solo { background: #6a4fa3; margin-top: 8px; }
+.player-list .bot-remove {
+  float: right; background: none; border: none; color: #ff8a80;
+  cursor: pointer; padding: 0 4px; font-size: .9rem;
+}
+.join-row { display: flex; gap: 8px; margin-top: 14px; }
+.join-row input { flex: 1; margin: 0; text-transform: uppercase; }
+.error { color: #ff8a80; margin-top: 12px; font-size: .9rem; min-height: 1.2em; }
+
+.room-code {
+  font-size: 2.4rem; letter-spacing: .4em; font-weight: 700;
+  background: var(--panel2); border-radius: 10px; padding: 12px 0 12px .4em;
+  margin-bottom: 18px; color: var(--accent);
+}
+.player-list { list-style: none; margin-bottom: 14px; }
+
+/* 대기실 게임 규칙 패널 */
+.options-box {
+  background: var(--panel2); border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 14px; text-align: left;
+}
+.opt-title { font-size: .85rem; font-weight: 600; margin-bottom: 8px; }
+.opt-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 6px 0; font-size: .9rem; gap: 8px;
+}
+.opt-row label { white-space: nowrap; }
+.opt-row select {
+  background: var(--panel); color: var(--text);
+  border: 1px solid #3b5068; border-radius: 6px; padding: 6px 10px;
+  font-size: .9rem;
+}
+.opt-row select:disabled { opacity: .6; }
+.player-list li {
+  background: var(--panel2); border-radius: 8px; padding: 8px 12px;
+  margin-bottom: 6px; text-align: left;
+}
+.player-list .host-tag { color: var(--c-gold); font-size: .8rem; margin-left: 6px; }
+.player-list .off { color: #ff8a80; font-size: .8rem; margin-left: 6px; }
+
+/* ---------- 게임: 상단 바 ---------- */
+#game-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; background: #0f1926;
+}
+.topbar-title { font-weight: 700; }
+.topbar-code { color: var(--accent); letter-spacing: .15em; margin-left: 8px; font-size: .9rem; }
+.topbar-btns { display: flex; gap: 8px; }
+.topbar-btns button { padding: 6px 12px; font-size: .85rem; }
+.turn-timer { font-weight: 700; color: var(--c-gold); font-size: .95rem; white-space: nowrap; }
+.turn-timer.urgent { color: #ff8a80; }
+
+/* ---------- 게임: 플레이어 바 ---------- */
+#players-bar {
+  display: flex; gap: 10px; padding: 10px 14px; flex-wrap: wrap;
+  background: #14202e;
+}
+.pcard {
+  flex: 1; min-width: 170px; background: var(--panel); border-radius: 10px;
+  padding: 8px 12px; border: 2px solid transparent;
+}
+.pcard.turn { border-color: var(--accent); box-shadow: 0 0 12px rgba(79,195,247,.35); }
+.pcard.me .pname::after { content: " (나)"; color: var(--accent); font-size: .8rem; }
+.pcard .pname { font-weight: 600; }
+.pcard .ppoints { float: right; font-weight: 700; color: var(--c-gold); }
+.pcard .prow { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.pcard .off { color: #ff8a80; font-size: .75rem; }
+.mini {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: clamp(15px, 4vw, 20px); height: clamp(15px, 4vw, 20px);
+  border-radius: 50%;
+  font-size: clamp(.55rem, 1.8vw, .7rem); font-weight: 700; color: #fff;
+}
+.mini.sq { border-radius: 4px; }
+.mini.gem-w { background: var(--c-w); color: var(--c-w-text); }
+.mini.gem-u { background: var(--c-u); }
+.mini.gem-g { background: var(--c-g); }
+.mini.gem-r { background: var(--c-r); }
+.mini.gem-k { background: var(--c-k); border: 1px solid #666; }
+.mini.gem-gold { background: var(--c-gold); color: #333; }
+
+/* ---------- 게임: 보드 ---------- */
+.game-main { display: flex; gap: 14px; padding: 14px; align-items: flex-start; }
+.board-col { flex: 1; }
+.side-col { width: 340px; display: flex; flex-direction: column; gap: 12px; }
+
+#nobles-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.noble {
+  width: clamp(64px, 17vw, 92px); aspect-ratio: 1;
+  background: linear-gradient(145deg,#4a3b63,#332a45);
+  border-radius: 10px; padding: 7px; font-size: clamp(.58rem, 1.7vw, .72rem);
+  border: 1px solid #6b5a8c; cursor: default;
+}
+.noble .npts { font-weight: 700; color: var(--c-gold); }
+.noble .nname { margin: 2px 0 6px; line-height: 1.15; height: 2.2em; overflow: hidden; }
+.noble .nreq { display: flex; gap: 3px; flex-wrap: wrap; }
+
+/* 더미 1 + 공개 카드 4 = 5칸 그리드. 화면이 좁아지면 칸이 함께 줄어든다 */
+.deck-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 120px));
+  gap: clamp(4px, 1vw, 10px);
+  margin-bottom: 10px;
+}
+.card, .deck {
+  width: 100%; aspect-ratio: 108 / 148; border-radius: 10px; position: relative;
+  cursor: pointer; transition: transform .08s;
+  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+}
+.card:hover, .deck:hover { transform: translateY(-3px); }
+.card {
+  background: linear-gradient(160deg, #33475e 60%, var(--card-tint, #33475e));
+  border: 1px solid #4a6076; padding: clamp(4px, 1.2vw, 8px);
+}
+.card.tint-w { --card-tint: #7d7a6b; }
+.card.tint-u { --card-tint: #1c4a9e; }
+.card.tint-g { --card-tint: #14713a; }
+.card.tint-r { --card-tint: #9e2222; }
+.card.tint-k { --card-tint: #111; }
+.card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.card .pts { font-size: clamp(.85rem, 3vw, 1.3rem); font-weight: 800; color: var(--c-gold); min-height: 1em; }
+.card .cost {
+  position: absolute; bottom: clamp(4px, 1.2vw, 8px); left: clamp(4px, 1.2vw, 8px);
+  display: flex; flex-direction: column; gap: clamp(1px, .5vw, 3px);
+}
+.card.empty { background: #223245; border: 1px dashed #3b5068; cursor: default; box-shadow: none; }
+.card.empty:hover { transform: none; }
+.card.hiddenc { background: repeating-linear-gradient(45deg,#2b3f57,#2b3f57 8px,#243546 8px,#243546 16px); display:flex; align-items:center; justify-content:center; font-size:1.6rem; }
+
+.deck {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 2px solid #4a6076; font-weight: 700;
+  background: repeating-linear-gradient(45deg,#2e4258,#2e4258 10px,#27394d 10px,#27394d 20px);
+}
+.deck .lvl { font-size: clamp(.75rem, 2.4vw, 1.1rem); }
+.deck .cnt { font-size: clamp(.6rem, 1.8vw, .8rem); color: #9fb3c8; margin-top: 4px; }
+.deck.l3 { border-color: #5b8dd6; }
+.deck.l2 { border-color: #d6c05b; }
+.deck.l1 { border-color: #6bbd7f; }
+
+/* ---------- 사이드: 은행 / 내 패널 / 로그 ---------- */
+.bank-box, .my-box, .log-box {
+  background: var(--panel); border-radius: 10px; padding: 12px 14px;
+}
+.bank-box h3, .my-box h3, .log-box h3 { font-size: .95rem; margin-bottom: 8px; }
+.hint { color: #9fb3c8; font-weight: 400; font-size: .75rem; }
+#bank { display: flex; gap: 8px; flex-wrap: wrap; }
+.token {
+  width: clamp(40px, 11vw, 46px); height: clamp(40px, 11vw, 46px);
+  border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: clamp(.9rem, 2.6vw, 1.05rem); color: #fff;
+  border: 3px solid rgba(255,255,255,.25); user-select: none;
+  transition: transform .08s;
+}
+.token:hover { transform: scale(1.08); }
+.token.gem-w { background: var(--c-w); color: var(--c-w-text); }
+.token.gem-u { background: var(--c-u); }
+.token.gem-g { background: var(--c-g); }
+.token.gem-r { background: var(--c-r); }
+.token.gem-k { background: var(--c-k); }
+.token.gem-gold { background: var(--c-gold); color: #333; cursor: default; }
+.token.selected { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.token.zero { opacity: .3; cursor: default; }
+.token.zero:hover { transform: none; }
+#take-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+#take-sel { flex: 1; display: flex; gap: 4px; min-height: 22px; }
+#btn-take { width: auto; padding: 8px 14px; }
+
+.my-box h4 { font-size: .85rem; margin: 10px 0 6px; color: #9fb3c8; }
+#my-tokens, #my-bonuses { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; align-items: center; }
+.label { font-size: .75rem; color: #9fb3c8; margin-right: 4px; }
+#my-reserved { display: flex; gap: 8px; flex-wrap: wrap; }
+#my-reserved .card { width: clamp(64px, 20vw, 88px); }
+#my-reserved .card .pts { font-size: clamp(.85rem, 2.6vw, 1.1rem); }
+
+.log-box { max-height: 220px; overflow: hidden; }
+#log { font-size: .78rem; color: #b9c9d9; max-height: 170px; overflow-y: auto; }
+#log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+
+/* ---------- 모달 ---------- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.modal-box {
+  background: var(--panel); border-radius: 14px; padding: 24px;
+  min-width: 320px; max-width: 520px; text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+}
+.modal-box h2 { font-size: 1.15rem; margin-bottom: 14px; }
+.modal-box .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+.modal-box .card { margin: 0 auto; cursor: default; width: 124px; }
+.modal-box .card:hover { transform: none; }
+.modal-box .noble { cursor: pointer; }
+.modal-box .noble:hover { border-color: var(--accent); }
+.modal-nobles { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.discard-tokens { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+.rank-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.rank-table th, .rank-table td { padding: 6px 10px; border-bottom: 1px solid #3b5068; font-size: .9rem; }
+.rank-table th { color: #9fb3c8; font-weight: 600; }
+.rank-table tr.win td { color: var(--c-gold); font-weight: 700; }
+
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #b3261e; color: #fff; padding: 10px 20px; border-radius: 8px;
+  font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 99;
+}
+#toast.show { opacity: 1; }
+
+@media (max-width: 900px) {
+  .game-main { flex-direction: column; }
+  .side-col { width: 100%; }
+}
+
+/* ---------- 모바일(휴대폰) ---------- */
+@media (max-width: 600px) {
+  .home-box { margin: 5vh 14px; padding: 24px 18px; }
+  .room-code { font-size: 1.8rem; }
+
+  #game-topbar { padding: 6px 8px; }
+  .topbar-btns button { padding: 6px 8px; font-size: .78rem; }
+
+  #players-bar { padding: 8px; gap: 6px; }
+  .pcard { min-width: calc(50% - 6px); padding: 6px 8px; font-size: .85rem; }
+  .pcard .ppoints { font-size: .9rem; }
+
+  .game-main { padding: 8px; gap: 8px; }
+  #nobles-row { gap: 6px; margin-bottom: 8px; }
+
+  .bank-box, .my-box, .log-box { padding: 10px; }
+  #bank { gap: 6px; }
+
+  .modal-box { min-width: 0; width: 92vw; max-width: 420px; padding: 16px 12px; }
+  .modal-box h2 { font-size: 1rem; }
+  .rank-table th, .rank-table td { padding: 4px 6px; font-size: .8rem; }
+
+  #log { font-size: .72rem; }
+}
