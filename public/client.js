@@ -397,6 +397,24 @@ function miniToken(color, n, square) {
   return `<span class="mini ${square ? 'sq' : ''} gem-${color}">${n}</span>`;
 }
 
+// 토큰(위)·카드 보너스(아래)를 색깔별 같은 열에 정렬한 그리드
+function tokenCardGrid(p) {
+  const cols = COLORS.map(
+    (c) => `<div class="tc-col">
+      <span class="mini gem-${c} ${p.tokens[c] ? '' : 'zero'}">${p.tokens[c]}</span>
+      <span class="mini sq gem-${c} ${p.bonuses[c] ? '' : 'zero'}">${p.bonuses[c]}</span>
+    </div>`
+  ).join('');
+  const gold = `<div class="tc-col">
+    <span class="mini gem-gold ${p.tokens.gold ? '' : 'zero'}">${p.tokens.gold}</span>
+    <span class="tc-empty"></span>
+  </div>`;
+  return `<div class="tc-grid">
+    <div class="tc-labels"><span>토큰</span><span>카드</span></div>
+    ${cols}${gold}
+  </div>`;
+}
+
 function cardHTML(card, extraClass = '') {
   if (!card) return `<div class="card empty ${extraClass}"></div>`;
   if (card.hidden) return `<div class="card hiddenc ${extraClass}" title="비공개 예약 카드">?</div>`;
@@ -437,20 +455,11 @@ function render() {
 function renderPlayers() {
   $('players-bar').innerHTML = game.players
     .map((p, i) => {
-      const tokens = [...COLORS, 'gold']
-        .filter((c) => p.tokens[c] > 0)
-        .map((c) => miniToken(c, p.tokens[c]))
-        .join('');
-      const bonuses = COLORS.filter((c) => p.bonuses[c] > 0)
-        .map((c) => miniToken(c, p.bonuses[c], true))
-        .join('');
       return `<div class="pcard ${i === game.current ? 'turn' : ''} ${p.id === myId && !isHotseat() ? 'me' : ''}">
         <span class="pname">${esc(p.name)}</span>
         <span class="ppoints">${p.points}점</span>
-        <div class="prow"><span class="label">토큰</span>${tokens || '-'}</div>
-        <div class="prow"><span class="label">카드</span>${bonuses || '-'}
-          <span class="label" style="margin-left:6px">예약 ${p.reserved.length} · 귀족 ${p.nobles.length}</span>
-        </div>
+        ${tokenCardGrid(p)}
+        <div class="prow"><span class="label">예약 ${p.reserved.length} · 귀족 ${p.nobles.length}</span></div>
       </div>`;
     })
     .join('');
@@ -534,11 +543,8 @@ function renderMy() {
     : `내 보유 — ${p.name} (${p.points}점)`;
   const total = Object.values(p.tokens).reduce((a, b) => a + b, 0);
   $('my-tokens').innerHTML =
-    `<span class="label">토큰 ${total}/10</span>` +
-    [...COLORS, 'gold'].map((c) => miniToken(c, p.tokens[c])).join('');
-  $('my-bonuses').innerHTML =
-    `<span class="label">카드 보너스</span>` +
-    COLORS.map((c) => miniToken(c, p.bonuses[c], true)).join('');
+    `<span class="label">토큰 ${total}/10 · 카드 보너스</span>` + tokenCardGrid(p);
+  $('my-bonuses').innerHTML = '';
   $('my-reserved').innerHTML =
     p.reserved.map((c) => cardHTML(c)).join('') || '<span class="hint">없음</span>';
   $('my-reserved').querySelectorAll('.card[data-card]').forEach((el) => {

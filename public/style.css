@@ -224,6 +224,20 @@ button.hotseat {
 .pcard .prow { margin-top: 5px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 .pcard .off { color: #e08a80; font-size: .75rem; }
 
+/* 토큰/카드 색깔 정렬 그리드: 같은 색은 같은 열, 위=토큰 아래=카드 */
+.tc-grid {
+  display: flex; gap: clamp(3px, 1vw, 5px); align-items: center;
+  margin-top: 7px;
+}
+.tc-labels {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: .68rem; color: var(--muted); text-align: right;
+  margin-right: 3px; line-height: clamp(15px, 4vw, 20px);
+}
+.tc-col { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.tc-empty { height: clamp(15px, 4vw, 20px); }
+.mini.zero { opacity: .22; }
+
 .mini {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: clamp(15px, 4vw, 20px); height: clamp(15px, 4vw, 20px);

@@ -1,6 +1,6 @@
 // 서비스 워커 — 앱 셸을 캐시해서 오프라인에서도 실행되게 한다.
 // (혼자 하기/같이 하기는 로컬 엔진으로 동작, 온라인 방은 서버 연결 필요)
-const CACHE = 'splendor-v2';
+const CACHE = 'splendor-v3';
 const ASSETS = [
   './',
   'index.html',
