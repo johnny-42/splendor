@@ -1,0 +1,8 @@
+{
+  "appId": "com.johnny42.splendor",
+  "appName": "스플렌더",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic"
+  }
+}
