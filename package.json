@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Splendor 웹 멀티플레이어 게임 (2~4인, 방 생성/초대)",
   "main": "server.js",
+  "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server.js",
     "deploy:pages": "sh scripts/deploy-pages.sh"
