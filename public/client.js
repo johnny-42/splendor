@@ -3,7 +3,25 @@
 // ---------- 연결 계층 ----------
 // 온라인 방(방 만들기/입장)은 서버 소켓, 혼자 하기/같이 하기는 로컬 엔진을 쓴다.
 // 서버가 없어도(오프라인/앱 설치 후) 혼자 하기·같이 하기는 항상 동작한다.
-const netSocket = typeof io !== 'undefined' ? io() : null;
+
+// 온라인 방 전용 서버 주소. 클라우드 배포 후 여기에 입력하면
+// 앱·GitHub Pages 어디서 열어도 이 서버로 온라인 방을 만든다.
+// 예: 'https://splendor.onrender.com'  (빈 값이면 접속한 서버 자신을 사용)
+const ONLINE_SERVER = '';
+
+const netSocket = (() => {
+  try {
+    if (typeof io === 'undefined') return null;
+    if (ONLINE_SERVER) return io(ONLINE_SERVER);
+    // 지정된 서버가 없으면: 게임 서버에서 직접 열었을 때만 같은 서버 사용
+    // (GitHub Pages·앱은 socket.io 서버가 없으므로 제외)
+    if (
+      (location.protocol === 'http:' || location.protocol === 'https:') &&
+      !location.hostname.endsWith('github.io')
+    ) return io();
+    return null;
+  } catch (_) { return null; }
+})();
 const localSocket = new LocalSocket();
 let socket = netSocket || localSocket;
 
@@ -121,6 +139,8 @@ $('input-local-name').addEventListener('keydown', (e) => {
 // 초대 링크: 접속 주소가 localhost면 친구가 쓸 수 없으므로 서버가 알려준 LAN 주소를 사용
 // (서브패스 배포에서도 동작하도록 현재 경로 기준으로 만든다)
 function inviteUrl() {
+  // 클라우드 서버를 쓰는 경우: 친구는 그 서버 웹페이지로 접속하면 된다
+  if (ONLINE_SERVER) return `${ONLINE_SERVER}/?room=${roomCode}`;
   let base = location.origin + location.pathname.replace(/index\.html$/, '');
   if (
     ['localhost', '127.0.0.1'].includes(location.hostname) &&

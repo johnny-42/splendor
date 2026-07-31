@@ -9,7 +9,8 @@ const { chooseAction } = require('./game/ai');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// CORS 허용: 앱(capacitor)·GitHub Pages 등 다른 출처에서도 온라인 방 접속 가능
+const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 // 게임 로직을 브라우저(오프라인 모드)에서도 쓸 수 있게 제공

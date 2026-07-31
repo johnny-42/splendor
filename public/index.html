@@ -142,8 +142,8 @@
 
   <div id="toast"></div>
 
-  <!-- 상대 경로: 서버(루트)와 GitHub Pages(서브패스) 양쪽에서 동작. Pages에는 socket.io가 없어 로드 실패 → 오프라인 모드로 동작 -->
-  <script src="socket.io/socket.io.js"></script>
+  <!-- socket.io 클라이언트를 번들에 포함: 앱/Pages에서도 온라인 서버(ONLINE_SERVER) 접속 가능 -->
+  <script src="vendor/socket.io.min.js"></script>
   <!-- 오프라인(로컬) 게임 엔진: 혼자 하기·같이 하기는 서버 없이 동작 -->
   <script src="game/cards.js"></script>
   <script src="game/game.js"></script>
