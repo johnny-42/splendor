@@ -1,0 +1,16 @@
+{
+  "name": "스플렌더",
+  "short_name": "스플렌더",
+  "description": "보석을 모아 15점을 먼저 달성하세요 — 웹 보드게임",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a2418",
+  "theme_color": "#103626",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

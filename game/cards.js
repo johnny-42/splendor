@@ -1,6 +1,12 @@
 // 스플렌더 카드 데이터 (나무위키 카드 구성표 기준)
 // 보석 색: w=다이아몬드(백), u=사파이어(청), g=에메랄드(녹), r=루비(적), k=줄마노(흑)
 // 각 항목: [점수, w, u, g, r, k] (비용)
+// Node(서버)와 브라우저(오프라인 앱) 양쪽에서 쓸 수 있게 UMD 형태로 내보낸다.
+
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.SplendorCards = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
 
 const COLORS = ['w', 'u', 'g', 'r', 'k'];
 
@@ -116,4 +122,6 @@ function buildNobles() {
   return NOBLES.map((n, i) => ({ id: 100 + i, name: n.name, points: 3, req: { ...n.req } }));
 }
 
-module.exports = { COLORS, buildCards, buildNobles };
+return { COLORS, buildCards, buildNobles };
+
+});

@@ -2,8 +2,16 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>스플렌더 온라인</title>
+  <!-- PWA: 아이폰/아이패드 홈 화면 설치용 -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#103626">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="스플렌더">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
@@ -24,6 +32,7 @@
         <button id="btn-join">입장</button>
       </div>
       <p id="home-error" class="error"></p>
+      <p class="install-hint">📱 아이폰·아이패드: Safari에서 열고 <b>공유 → 홈 화면에 추가</b>하면 앱으로 설치됩니다</p>
     </div>
   </div>
 
@@ -133,7 +142,13 @@
 
   <div id="toast"></div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- 상대 경로: 서버(루트)와 GitHub Pages(서브패스) 양쪽에서 동작. Pages에는 socket.io가 없어 로드 실패 → 오프라인 모드로 동작 -->
+  <script src="socket.io/socket.io.js"></script>
+  <!-- 오프라인(로컬) 게임 엔진: 혼자 하기·같이 하기는 서버 없이 동작 -->
+  <script src="game/cards.js"></script>
+  <script src="game/game.js"></script>
+  <script src="game/ai.js"></script>
+  <script src="local.js"></script>
   <script src="client.js"></script>
 </body>
 </html>

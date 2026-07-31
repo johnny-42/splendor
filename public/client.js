@@ -1,5 +1,28 @@
 /* 스플렌더 클라이언트 */
-const socket = io();
+
+// ---------- 연결 계층 ----------
+// 온라인 방(방 만들기/입장)은 서버 소켓, 혼자 하기/같이 하기는 로컬 엔진을 쓴다.
+// 서버가 없어도(오프라인/앱 설치 후) 혼자 하기·같이 하기는 항상 동작한다.
+const netSocket = typeof io !== 'undefined' ? io() : null;
+const localSocket = new LocalSocket();
+let socket = netSocket || localSocket;
+
+function useLocal() { socket = localSocket; }
+function useNet() {
+  if (!netSocket) return false;
+  socket = netSocket;
+  return true;
+}
+// 서버/로컬 양쪽 이벤트를 같은 핸들러로 받는다
+function onSocket(ev, fn) {
+  if (netSocket) netSocket.on(ev, fn);
+  localSocket.on(ev, fn);
+}
+
+// PWA: 서비스 워커 등록 (오프라인 캐시)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 const COLORS = ['w', 'u', 'g', 'r', 'k'];
 const COLOR_NAMES = { w: '다이아몬드', u: '사파이어', g: '에메랄드', r: '루비', k: '줄마노', gold: '황금' };
@@ -46,6 +69,8 @@ $('modal').addEventListener('click', (e) => {
 // ---------- 홈 / 대기실 ----------
 
 $('btn-create').onclick = () => {
+  if (!useNet() || !netSocket.connected)
+    return ($('home-error').textContent = '서버에 연결할 수 없습니다. 혼자 하기·같이 하기는 오프라인에서도 가능해요.');
   socket.emit('createRoom', { name: $('input-name').value }, (res) => {
     if (res.error) return ($('home-error').textContent = res.error);
     myId = res.myId;
@@ -54,8 +79,9 @@ $('btn-create').onclick = () => {
   });
 };
 
-// 혼자 하기: 방을 만들고 봇 1개를 자동 추가 (대기실에서 봇을 더 추가할 수 있음)
+// 혼자 하기: 로컬 엔진으로 방을 만들고 봇 1개를 자동 추가 (서버 불필요, 오프라인 가능)
 $('btn-solo').onclick = () => {
+  useLocal();
   socket.emit('createRoom', { name: $('input-name').value }, (res) => {
     if (res.error) return ($('home-error').textContent = res.error);
     myId = res.myId;
@@ -65,8 +91,9 @@ $('btn-solo').onclick = () => {
   });
 };
 
-// 같이 하기(한 기기): 방을 만들고 대기실에서 함께 할 사람 이름을 추가한다
+// 같이 하기(한 기기): 로컬 엔진으로 방을 만들고 함께 할 사람 이름을 추가한다 (오프라인 가능)
 $('btn-hotseat').onclick = () => {
+  useLocal();
   socket.emit('createRoom', { name: $('input-name').value, hotseat: true }, (res) => {
     if (res.error) return ($('home-error').textContent = res.error);
     myId = res.myId;
@@ -92,15 +119,16 @@ $('input-local-name').addEventListener('keydown', (e) => {
 // ---------- 초대 링크 ----------
 
 // 초대 링크: 접속 주소가 localhost면 친구가 쓸 수 없으므로 서버가 알려준 LAN 주소를 사용
+// (서브패스 배포에서도 동작하도록 현재 경로 기준으로 만든다)
 function inviteUrl() {
-  let base = location.origin;
+  let base = location.origin + location.pathname.replace(/index\.html$/, '');
   if (
     ['localhost', '127.0.0.1'].includes(location.hostname) &&
     lobbyInfo && lobbyInfo.urls && lobbyInfo.urls.length
   ) {
-    base = lobbyInfo.urls[0];
+    base = lobbyInfo.urls[0] + '/';
   }
-  return `${base}/?room=${roomCode}`;
+  return `${base}?room=${roomCode}`;
 }
 
 function copyText(text) {
@@ -141,6 +169,8 @@ $('btn-copy-url').onclick = () => {
 }
 
 $('btn-join').onclick = () => {
+  if (!useNet() || !netSocket.connected)
+    return ($('home-error').textContent = '서버에 연결할 수 없습니다. 혼자 하기·같이 하기는 오프라인에서도 가능해요.');
   socket.emit('joinRoom', { code: $('input-code').value, name: $('input-name').value }, (res) => {
     if (res.error) return ($('home-error').textContent = res.error);
     myId = res.myId;
@@ -155,7 +185,7 @@ $('btn-start').onclick = () => {
   });
 };
 
-socket.on('lobby', (lobby) => {
+onSocket('lobby', (lobby) => {
   lobbyInfo = lobby;
   roomCode = lobby.code;
   const isHost = lobby.hostId === myId;
@@ -260,7 +290,7 @@ function syncOptions(lobby) {
   OPT_ELS.forEach((el) => (el.disabled = !editable));
 }
 
-socket.on('notice', (msg) => toast(msg));
+onSocket('notice', (msg) => toast(msg));
 
 // ---------- 카드 스킨 (개인 설정: 서버와 무관, 내 화면에만 적용) ----------
 
@@ -293,7 +323,7 @@ let turnDeadline = null; // 로컬 기준 턴 마감 시각
 
 let lastCurrent = null; // 같이 하기 모드 차례 알림용
 
-socket.on('game', (state) => {
+onSocket('game', (state) => {
   const prevCurrent = game && game.phase !== 'ended' ? lastCurrent : null;
   game = state;
   if (game.phase !== 'discard') discardSel = null;
@@ -693,4 +723,8 @@ function sendAction(action, onOk) {
   });
 }
 
-socket.on('disconnect', () => toast('서버와 연결이 끊겼습니다.'));
+if (netSocket)
+  netSocket.on('disconnect', () => {
+    // 로컬(오프라인) 게임 중에는 서버 끊김이 영향 없다
+    if (socket === netSocket) toast('서버와 연결이 끊겼습니다.');
+  });

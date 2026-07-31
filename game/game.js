@@ -1,5 +1,10 @@
-// 스플렌더 게임 로직
-const { COLORS, buildCards, buildNobles } = require('./cards');
+// 스플렌더 게임 로직 — Node(서버)와 브라우저(오프라인 앱) 양쪽에서 동작 (UMD)
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory(require('./cards'));
+  else root.SplendorGame = factory(root.SplendorCards);
+})(typeof self !== 'undefined' ? self : this, function (cardsModule) {
+
+const { COLORS, buildCards, buildNobles } = cardsModule;
 
 const WIN_POINTS = 15;
 const TOKEN_LIMIT = 10;
@@ -363,4 +368,6 @@ function colorName(c) {
   return { w: '다이아몬드', u: '사파이어', g: '에메랄드', r: '루비', k: '줄마노', gold: '황금' }[c] || c;
 }
 
-module.exports = { Game, TOKEN_LIMIT };
+return { Game, TOKEN_LIMIT };
+
+});

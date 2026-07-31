@@ -12,6 +12,8 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
+// 게임 로직을 브라우저(오프라인 모드)에서도 쓸 수 있게 제공
+app.use('/game', express.static(path.join(__dirname, 'game')));
 
 const PORT = process.env.PORT || Number(process.argv[2]) || 3000;
 const BOT_DELAY = 1000; // 봇 행동 간격(ms)

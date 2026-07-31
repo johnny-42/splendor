@@ -1,7 +1,12 @@
-// 봇 AI — 서버에서 봇 차례에 행동을 결정한다. 난이도 3단계.
+// 봇 AI — 봇 차례에 행동을 결정한다. 난이도 3단계. (서버/브라우저 겸용 UMD)
 // 쉬움: 무작위 위주(살 수 있으면 아무거나 구매, 토큰도 무작위)
 // 보통: 살 수 있는 최고점 카드 구매 → 목표 카드(부족 토큰 최소)용 토큰 수집 → 예약으로 황금 확보
 // 어려움: 보통 + 효율 중심 목표 선정(점수/부족토큰 비율), 귀족 즉시 달성 가중치, 더 이른 예약
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.SplendorAI = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+
 const COLORS = ['w', 'u', 'g', 'r', 'k'];
 
 function tokenTotal(t) {
@@ -243,4 +248,6 @@ function chooseDiscard(game, p) {
   return { type: 'discard', tokens: d };
 }
 
-module.exports = { chooseAction };
+return { chooseAction };
+
+});

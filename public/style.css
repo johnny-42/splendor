@@ -134,6 +134,12 @@ button.hotseat {
 .join-row input { flex: 1; margin: 0; text-transform: uppercase; letter-spacing: .2em; }
 .join-row button { white-space: nowrap; }
 .error { color: #e08a80; margin-top: 12px; font-size: .9rem; min-height: 1.2em; }
+.install-hint {
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid rgba(201, 162, 39, .15);
+  color: var(--muted); font-size: .78rem; line-height: 1.5;
+}
+.install-hint b { color: var(--accent); font-weight: 600; }
 
 .room-code {
   font-size: 2.5rem; letter-spacing: .4em; font-weight: 900;
@@ -473,6 +479,17 @@ body[data-skin="royal"] .card:not(.empty):not(.hiddenc)::before {
 @media (max-width: 900px) {
   .game-main { flex-direction: column; }
   .side-col { width: 100%; }
+}
+
+/* ---------- 아이폰/아이패드 홈 화면 앱: 노치·홈바 세이프에어리어 ---------- */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  #game-topbar { padding-top: calc(9px + env(safe-area-inset-top)); }
+  .game-main { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  #toast { bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
 /* ---------- 모바일(휴대폰) ---------- */
