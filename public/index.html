@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>스플렌더 온라인</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +18,7 @@
       <input id="input-name" type="text" maxlength="12" placeholder="닉네임">
       <button id="btn-create" class="primary">방 만들기 (호스트)</button>
       <button id="btn-solo" class="primary solo">🤖 혼자 하기 (AI와 대전)</button>
+      <button id="btn-hotseat" class="primary hotseat">👥 같이 하기 (한 기기에서 교대)</button>
       <div class="join-row">
         <input id="input-code" type="text" maxlength="4" placeholder="방 코드">
         <button id="btn-join">입장</button>
@@ -29,6 +33,7 @@
       <h1>대기실</h1>
       <p class="subtitle">친구에게 방 코드를 알려주세요</p>
       <div id="lobby-code" class="room-code"></div>
+      <button id="btn-copy-url" class="copy-url">🔗 초대 링크 복사</button>
       <p id="lobby-url" class="subtitle" style="word-break:break-all"></p>
       <ul id="lobby-players" class="player-list"></ul>
       <div id="lobby-options" class="options-box">
@@ -64,6 +69,14 @@
           <label for="opt-noble">귀족 타일 수</label>
           <select id="opt-noble"></select>
         </div>
+        <div class="opt-row">
+          <label for="opt-skin">카드 스킨 <span class="hint">(내 화면에만 적용)</span></label>
+          <select id="opt-skin"></select>
+        </div>
+      </div>
+      <div id="local-add" class="join-row" style="display:none;margin-bottom:10px">
+        <input id="input-local-name" type="text" maxlength="12" placeholder="추가할 플레이어 이름">
+        <button id="btn-addlocal">➕ 추가</button>
       </div>
       <button id="btn-addbot" style="display:none;margin-bottom:10px">🤖 봇 추가</button>
       <button id="btn-start" class="primary" style="display:none">게임 시작</button>
@@ -78,6 +91,7 @@
       <span class="topbar-title">💎 스플렌더 <span id="topbar-code" class="topbar-code"></span></span>
       <span id="turn-timer" class="turn-timer"></span>
       <span class="topbar-btns">
+        <button id="btn-skin" title="카드 스킨 변경">🎨 스킨</button>
         <button id="btn-restart" style="display:none">🔄 다시하기</button>
         <button id="btn-exit">나가기</button>
       </span>

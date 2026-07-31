@@ -65,6 +65,81 @@ $('btn-solo').onclick = () => {
   });
 };
 
+// 같이 하기(한 기기): 방을 만들고 대기실에서 함께 할 사람 이름을 추가한다
+$('btn-hotseat').onclick = () => {
+  socket.emit('createRoom', { name: $('input-name').value, hotseat: true }, (res) => {
+    if (res.error) return ($('home-error').textContent = res.error);
+    myId = res.myId;
+    roomCode = res.code;
+    showScreen('lobby');
+    $('input-local-name').focus();
+  });
+};
+
+$('btn-addlocal').onclick = () => {
+  const nameEl = $('input-local-name');
+  socket.emit('addLocalPlayer', { name: nameEl.value }, (res) => {
+    if (res.error) return ($('lobby-error').textContent = res.error);
+    $('lobby-error').textContent = '';
+    nameEl.value = '';
+    nameEl.focus();
+  });
+};
+$('input-local-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('btn-addlocal').click();
+});
+
+// ---------- 초대 링크 ----------
+
+// 초대 링크: 접속 주소가 localhost면 친구가 쓸 수 없으므로 서버가 알려준 LAN 주소를 사용
+function inviteUrl() {
+  let base = location.origin;
+  if (
+    ['localhost', '127.0.0.1'].includes(location.hostname) &&
+    lobbyInfo && lobbyInfo.urls && lobbyInfo.urls.length
+  ) {
+    base = lobbyInfo.urls[0];
+  }
+  return `${base}/?room=${roomCode}`;
+}
+
+function copyText(text) {
+  // 비보안 컨텍스트(LAN IP 접속)나 클립보드 권한 거부 시 폴백
+  const legacy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } finally { ta.remove(); }
+    return ok ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).catch(legacy);
+  }
+  return legacy();
+}
+
+$('btn-copy-url').onclick = () => {
+  if (!roomCode) return;
+  const url = inviteUrl();
+  copyText(url).then(
+    () => toast(`초대 링크 복사됨: ${url}`),
+    () => toast(`복사 실패 — 이 주소를 직접 알려주세요: ${url}`)
+  );
+};
+
+// 초대 링크(?room=XXXX)로 들어온 경우: 방 코드를 미리 채워준다
+{
+  const r = new URLSearchParams(location.search).get('room');
+  if (r) {
+    $('input-code').value = r.toUpperCase();
+    $('input-name').focus();
+  }
+}
+
 $('btn-join').onclick = () => {
   socket.emit('joinRoom', { code: $('input-code').value, name: $('input-name').value }, (res) => {
     if (res.error) return ($('home-error').textContent = res.error);
@@ -84,33 +159,45 @@ socket.on('lobby', (lobby) => {
   lobbyInfo = lobby;
   roomCode = lobby.code;
   const isHost = lobby.hostId === myId;
+  const hs = !!lobby.hotseat;
   $('lobby-code').textContent = lobby.code;
+  // 같이 하기 모드는 한 기기에서 하므로 초대 관련 UI를 숨긴다
+  $('lobby-code').style.display = hs ? 'none' : '';
+  $('btn-copy-url').style.display = hs ? 'none' : '';
+  document.querySelector('#screen-lobby .subtitle').textContent = hs
+    ? '한 기기에서 번갈아 플레이합니다. 함께 할 사람을 추가하세요.'
+    : '친구에게 방 코드를 알려주세요';
   $('lobby-url').textContent =
-    lobby.urls && lobby.urls.length ? `휴대폰·다른 PC 접속: ${lobby.urls.join(' 또는 ')}` : '';
+    !hs && lobby.urls && lobby.urls.length ? `휴대폰·다른 PC 접속: ${lobby.urls.join(' 또는 ')}` : '';
   $('lobby-players').innerHTML = lobby.players
     .map(
       (p) =>
-        `<li>${p.bot ? '🤖 ' : ''}${esc(p.name)}` +
+        `<li>${p.bot ? '🤖 ' : p.local ? '👤 ' : ''}${esc(p.name)}` +
         (p.id === lobby.hostId ? '<span class="host-tag">👑 호스트</span>' : '') +
         (p.connected ? '' : '<span class="off">연결 끊김</span>') +
-        (p.bot && isHost && !lobby.started
-          ? `<button class="bot-remove" data-bot="${esc(p.id)}" title="봇 제거">✕</button>`
+        ((p.bot || p.local) && isHost && !lobby.started
+          ? `<button class="bot-remove" data-kind="${p.bot ? 'bot' : 'local'}" data-rid="${esc(p.id)}" title="제거">✕</button>`
           : '') +
         `</li>`
     )
     .join('');
   $('lobby-players').querySelectorAll('.bot-remove').forEach((el) => {
     el.onclick = () =>
-      socket.emit('removeBot', { id: el.dataset.bot }, (res) => {
-        if (res.error) $('lobby-error').textContent = res.error;
-      });
+      socket.emit(
+        el.dataset.kind === 'bot' ? 'removeBot' : 'removeLocalPlayer',
+        { id: el.dataset.rid },
+        (res) => { if (res.error) $('lobby-error').textContent = res.error; }
+      );
   });
   syncOptions(lobby);
+  $('local-add').style.display = hs && isHost && !lobby.started && lobby.players.length < 4 ? 'flex' : 'none';
   $('btn-addbot').style.display = isHost && !lobby.started && lobby.players.length < 4 ? 'block' : 'none';
   $('btn-start').style.display = isHost && !lobby.started ? 'block' : 'none';
   $('btn-start').disabled = lobby.players.length < 2;
   $('lobby-hint').textContent = isHost
-    ? lobby.players.length < 2 ? '봇을 추가하거나 2명 이상 모이면 시작할 수 있습니다.' : ''
+    ? lobby.players.length < 2
+      ? hs ? '함께 할 사람을 1명 이상 추가하면 시작할 수 있습니다.' : '봇을 추가하거나 2명 이상 모이면 시작할 수 있습니다.'
+      : ''
     : '호스트가 시작하기를 기다리는 중...';
 });
 
@@ -130,6 +217,7 @@ const optReserve = $('opt-reserve');
 const optNoble = $('opt-noble');
 const OPT_ELS = [optTime, optScore, optFirst, optBot, optReserve, optNoble];
 
+optTime.add(new Option('없음', 0));
 [10, 15, 20, 30, 45, 60].forEach((v) => optTime.add(new Option(v + '초', v)));
 for (let v = 10; v <= 20; v++) optScore.add(new Option(v + '점', v));
 optReserve.add(new Option('금지', 0));
@@ -174,13 +262,50 @@ function syncOptions(lobby) {
 
 socket.on('notice', (msg) => toast(msg));
 
+// ---------- 카드 스킨 (개인 설정: 서버와 무관, 내 화면에만 적용) ----------
+
+const SKINS = [
+  { id: 'gem', name: '보석 세공' },
+  { id: 'royal', name: '로열 오너먼트' },
+  { id: 'plain', name: '미니멀' },
+];
+const skinSel = $('opt-skin');
+SKINS.forEach((s) => skinSel.add(new Option(s.name, s.id)));
+
+function applySkin(id) {
+  if (!SKINS.some((s) => s.id === id)) id = 'gem';
+  document.body.dataset.skin = id;
+  try { localStorage.setItem('splendor.skin', id); } catch {}
+  if (skinSel.value !== id) skinSel.value = id;
+}
+skinSel.onchange = () => applySkin(skinSel.value);
+
+$('btn-skin').onclick = () => {
+  const cur = document.body.dataset.skin || 'gem';
+  const next = SKINS[(SKINS.findIndex((s) => s.id === cur) + 1) % SKINS.length];
+  applySkin(next.id);
+  toast(`카드 스킨: ${next.name}`);
+};
+
+applySkin((() => { try { return localStorage.getItem('splendor.skin'); } catch { return null; } })() || 'gem');
+
 let turnDeadline = null; // 로컬 기준 턴 마감 시각
 
+let lastCurrent = null; // 같이 하기 모드 차례 알림용
+
 socket.on('game', (state) => {
+  const prevCurrent = game && game.phase !== 'ended' ? lastCurrent : null;
   game = state;
   if (game.phase !== 'discard') discardSel = null;
   turnDeadline = state.turnEndsIn != null ? Date.now() + state.turnEndsIn : null;
   showScreen('game');
+  // 같이 하기 모드: 차례가 바뀌면 기기를 넘기라고 알려준다
+  if (isHotseat() && game.phase !== 'ended' && game.current !== prevCurrent) {
+    const cur = game.players[game.current];
+    if (cur && prevCurrent !== null) toast(`👉 ${cur.name}님 차례입니다. 기기를 넘겨주세요!`);
+    takeSel = []; // 이전 사람이 고르던 토큰 선택 초기화
+  }
+  lastCurrent = game.current;
   $('topbar-code').textContent =
     (roomCode || '') + (game.targetScore ? ` · 목표 ${game.targetScore}점` : '');
   $('btn-restart').style.display = lobbyInfo && lobbyInfo.hostId === myId ? 'inline-block' : 'none';
@@ -190,12 +315,18 @@ socket.on('game', (state) => {
 // 턴 제한시간 카운트다운
 setInterval(() => {
   const el = $('turn-timer');
-  if (!game || game.phase === 'ended' || !turnDeadline) {
+  if (!game || game.phase === 'ended') {
     el.textContent = '';
     return;
   }
-  const s = Math.max(0, Math.ceil((turnDeadline - Date.now()) / 1000));
   const cur = game.players[game.current];
+  if (!turnDeadline) {
+    // 제한시간 없음: 현재 차례만 표시
+    el.textContent = cur ? `👉 ${cur.name} 차례` : '';
+    el.classList.remove('urgent');
+    return;
+  }
+  const s = Math.max(0, Math.ceil((turnDeadline - Date.now()) / 1000));
   el.textContent = `⏱ ${cur ? cur.name : ''} ${s}초`;
   el.classList.toggle('urgent', s <= 5);
 }, 250);
@@ -219,10 +350,16 @@ function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+function isHotseat() {
+  return !!(lobbyInfo && lobbyInfo.hotseat);
+}
+// 같이 하기 모드에서는 "나" = 현재 차례인 플레이어 (기기를 넘겨가며 플레이)
 function me() {
+  if (isHotseat()) return game.players[game.current];
   return game.players.find((p) => p.id === myId);
 }
 function isMyTurn() {
+  if (isHotseat()) return true;
   return game.players[game.current] && game.players[game.current].id === myId;
 }
 
@@ -236,7 +373,7 @@ function cardHTML(card, extraClass = '') {
   const cost = COLORS.filter((c) => card.cost[c] > 0)
     .map((c) => miniToken(c, card.cost[c]))
     .join('');
-  return `<div class="card tint-${card.bonus} ${extraClass}" data-card="${card.id}">
+  return `<div class="card tint-${card.bonus} lv${card.level} ${extraClass}" data-card="${card.id}">
     <div class="top">
       <span class="pts">${card.points || ''}</span>
       ${miniToken(card.bonus, '', true).replace('></span>', '>&#9670;</span>')}
@@ -277,7 +414,7 @@ function renderPlayers() {
       const bonuses = COLORS.filter((c) => p.bonuses[c] > 0)
         .map((c) => miniToken(c, p.bonuses[c], true))
         .join('');
-      return `<div class="pcard ${i === game.current ? 'turn' : ''} ${p.id === myId ? 'me' : ''}">
+      return `<div class="pcard ${i === game.current ? 'turn' : ''} ${p.id === myId && !isHotseat() ? 'me' : ''}">
         <span class="pname">${esc(p.name)}</span>
         <span class="ppoints">${p.points}점</span>
         <div class="prow"><span class="label">토큰</span>${tokens || '-'}</div>
@@ -362,7 +499,9 @@ $('btn-take').onclick = () => {
 function renderMy() {
   const p = me();
   if (!p) return;
-  $('my-title').textContent = `내 보유 — ${p.name} (${p.points}점)`;
+  $('my-title').textContent = isHotseat()
+    ? `${p.name}의 보유 (${p.points}점)`
+    : `내 보유 — ${p.name} (${p.points}점)`;
   const total = Object.values(p.tokens).reduce((a, b) => a + b, 0);
   $('my-tokens').innerHTML =
     `<span class="label">토큰 ${total}/10</span>` +
